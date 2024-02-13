@@ -86,7 +86,7 @@ header {
 }
 
 .movie-card {
-    width: calc(25% - 8px);
+    width: calc(20% - 8px);
     border-radius: 8px;
     background-color: var(--primary-color);
     transition: transform 0.3s ease-in-out;
@@ -185,6 +185,7 @@ header {
     left: 0;
     background-color: var(--dark);
     opacity: 0.5;
+    cursor: pointer;
 }
 .modal {
     position: fixed;
@@ -221,13 +222,14 @@ header {
     color: var(--blue-color);
 }
 .modal-list-watch-provider-category {
-    color: var(--red-color);
+    color: var(--blue-color);
+    line-height: 30px;
 }
 
 .modal-filter-section {
     margin-top: 32px;
 }
-.modal-filter-section select {
+select {
     background: var(--primary-color);
     color: var(--white);
     border: none;
@@ -235,17 +237,61 @@ header {
     border-radius: 4px;
     cursor: pointer;
 }
-.modal-filter-section select:hover {
+select:hover {
     background: var(--secondary-color);
 }
-.modal-filter-section select option {
+select option {
     background: var(--primary-color);
     color: var(--white);
     text-shadow: 0 1px 0 var(--dark);
 }
 
+.modal-list-watch-provider-logo {
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+}
 
+.modal-close-button {
+    position: absolute;
+    margin-top: -54px;
+    font-size: 36px;
+    right: 24px;
+    cursor: pointer;
+}
+.modal-close-button:hover {
+    color: var(--red-color);
+}
+.modal-close-button:after {
+    display: inline-block;
+    content: "\00d7"; /* This will render the 'X' */
+}
 
+#main-filter-section {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.empty-state {
+    color: var(--sky-color);
+    background-color: var(--red-color);
+    padding: 24px 0;
+    width: 100%;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 100;
+    font-size: 20px;
+}
+
+.card-certification {
+    color: var(--white);
+    margin-left: 16px;
+    font-size: 12px;
+    background-color: var(--red-color);
+    padding: 4px 8px;
+    border-radius: 4px;
+}
 
 
 footer {

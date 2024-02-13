@@ -1,11 +1,14 @@
 const urlBigImagePath = "https://media.themoviedb.org/t/p/w1920_and_h600_multi_faces";
 const urlSmallImagePath = "https://media.themoviedb.org/t/p/w220_and_h330_face";
+const urlProviderImagePath = "https://image.tmdb.org/t/p/original/";
 let countryList = [];
 let countryCode = "US";
-
 let movieList = [];
+let genreList = [];
+let certificationList = [];
 
-const showTrendingMovies = async () => {
+const loadTrendingMovies = async () => {
+    movieList = [];
     for(let i=1;i<=5;i++){
         let url = `https://api.themoviedb.org/3/discover/movie?include_adult=false&include_video=false&language=en-US&page=${i}&sort_by=popularity.desc`;
         const options = {
@@ -21,13 +24,19 @@ const showTrendingMovies = async () => {
             movieList = movieList.concat(data.results);
         }
     }
+    loadCertifications(movieList);
     showMovieCards(movieList);
+    loadGenresList();
 }
 
 const showMovieCards = (list) => {
-    changeMainBannerImage(list[0].backdrop_path);
     document.getElementById('movie-list').innerHTML = "";
-    list.forEach((data) => addMovieCard(data));
+    if(list.length>0){
+        changeMainBannerImage(list[0].backdrop_path);
+        list.forEach((data) => addMovieCard(data));
+    }else{
+        showEmptyStateMovieList();
+    }
 }; 
 
 const addMovieCard = (data) => {
@@ -35,6 +44,7 @@ const addMovieCard = (data) => {
 
     let card = document.createElement("div");
     card.className = "movie-card";
+    card.id = data.id;
     card.addEventListener("click", () => { showDetailsByMovie(data.id) });
 
     let img = document.createElement("img");
@@ -44,6 +54,7 @@ const addMovieCard = (data) => {
 
     let ratingSection = document.createElement("div");
     ratingSection.className = "movie-card-rating-section";
+    ratingSection.id = `movie-card-rating-section-${data.id}`;
     let star = document.createElement("i");
     star.className = "star";
     ratingSection.appendChild(star);
@@ -64,6 +75,7 @@ const addMovieCard = (data) => {
     card.appendChild(movieRelease);
 
     movieListElement.appendChild(card);
+    showCertification(data);
 };
 
 const showDetailsByMovie = async (id) => {
@@ -77,6 +89,11 @@ const showDetailsByMovie = async (id) => {
     let modal = document.createElement("div");
     modal.className = "modal";
     modal.id = "modal";
+
+    let closeButton = document.createElement("span");
+    closeButton.addEventListener("click", () => { closeDetailsByMovie() });
+    closeButton.className = "modal-close-button";
+    modal.appendChild(closeButton);
 
     let url = `https://api.themoviedb.org/3/movie/${id}?language=en-US`;
     const options = {
@@ -131,10 +148,8 @@ const showDetailsByMovie = async (id) => {
         });
         filterSection.appendChild(countrySelector);
         modal.appendChild(filterSection);
-
         loadMovieWatchProviders(id);
     }
-    
     body.appendChild(modal);
 };
 
@@ -144,13 +159,11 @@ const loadMovieWatchProviders = async (id) => {
         ['buy','Buy on'],
         ['rent','Rent on']
     ];
-
     types.forEach(type => {
         if(document.getElementById(`modal-list-watch-providers-${type[0]}`)!=undefined){
             document.getElementById(`modal-list-watch-providers-${type[0]}`).remove();
         }
     });
-
     const url = `https://api.themoviedb.org/3/movie/${id}/watch/providers`;
     const options = {
         method: 'GET',
@@ -163,32 +176,34 @@ const loadMovieWatchProviders = async (id) => {
     if(response.ok){
         let modal = document.getElementById("modal");
         let data = await response.json();
-        
         if(data.results[countryCode]!=undefined){
             types.forEach(type => {
                 let list = data.results[countryCode][type[0]];
                 if(list != undefined){
-                    let flatrates = document.createElement("div");
-                    flatrates.className = "modal-list-watch-providers";
-                    flatrates.id = `modal-list-watch-providers-${type[0]}`;
-                    let flatrate = document.createElement("span");
-                    flatrate.innerHTML = `${type[1]}: `;
-                    flatrate.className = "modal-list-watch-provider-category";
-                    flatrates.appendChild(flatrate);
+                    let categorySection = document.createElement("div");
+                    categorySection.className = "modal-list-watch-providers";
+                    categorySection.id = `modal-list-watch-providers-${type[0]}`;
+                    let categoryElement = document.createElement("span");
+                    categoryElement.innerHTML = `${type[1]}: `;
+                    categoryElement.className = "modal-list-watch-provider-category";
+                    categorySection.appendChild(categoryElement);
                     list.forEach(provider => {
-                        let flatrate = document.createElement("span");
-                        flatrate.innerHTML = provider.provider_name;
-                        flatrates.appendChild(flatrate);
+                        let imageProvider = document.createElement("img");
+                        imageProvider.className = "modal-list-watch-provider-logo";
+                        imageProvider.src = `${urlProviderImagePath}${provider.logo_path}`;
+                        imageProvider.alt = provider.provider_name;
+                        imageProvider.title = provider.provider_name;
+                        categorySection.appendChild(imageProvider);
                     });
-                    modal.appendChild(flatrates);
+                    modal.appendChild(categorySection);
                 }
             });
         }else{
-            let flatrates = document.createElement("div");
-            flatrates.className = "modal-list-watch-providers";
-            flatrates.id = `modal-list-watch-providers-flatrate`;
-            flatrates.innerHTML = "This movie is not in this country.";
-            modal.appendChild(flatrates);
+            let categorySection = document.createElement("div");
+            categorySection.className = "modal-list-watch-providers";
+            categorySection.id = `modal-list-watch-providers-flatrate`;
+            categorySection.innerHTML = "This movie is not in this country.";
+            modal.appendChild(categorySection);
         }
     }
 };
@@ -234,8 +249,156 @@ const changeCountrySelected = (obj,idMovie) => {
     loadMovieWatchProviders(idMovie);
 };
 
-document.getElementById("header-menu-trending").addEventListener("click", () => { showTrendingMovies() });
+const loadGenresList = async () => {
+    let url = "https://api.themoviedb.org/3/genre/movie/list?language=en";
+    const options = {
+        method: 'GET',
+        headers: {
+            accept: 'application/json',
+            Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzZTAzOGM1NTNkNDlhNmE4Y2RmOGRmNDljMDU3YTRiNiIsInN1YiI6IjY0YTliZGQ4NjZhMGQzMDBhZGU3YjZjNyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.qUxIoPicoB3WgJmbCP4fEPAwQWaIEdseXKkqTXHCf20'
+        }
+    };
+    const response = await fetch(url, options);
+    if(response.ok){
+        let data = await response.json();
+        genreList = data.genres;
+    }
+    showGenresFilter();
+};
+
+const showGenresFilter = () => {
+    let filterSectionElement = document.getElementById("main-filter-section");
+    let selectGenre = document.createElement("select");
+    selectGenre.addEventListener("change", () => { changeGenreFilter(selectGenre) });
+    let optionGenre = document.createElement("option");
+    optionGenre.value = 0;
+    optionGenre.innerHTML = "All genres";
+    selectGenre.appendChild(optionGenre);
+    genreList.forEach(genre => {
+        let optionGenre = document.createElement("option");
+        optionGenre.value = genre.id;
+        optionGenre.innerHTML = genre.name;
+        selectGenre.appendChild(optionGenre);
+    });
+    filterSectionElement.appendChild(selectGenre);
+};
+
+const changeGenreFilter = (obj) => {
+    let idSearched = parseInt(obj.value);
+    switch (idSearched) {
+        case 0:
+            //show all
+            showMovieCards(movieList);
+            break;
+        case 10770:
+            //tv movie (I dont have this genre)
+            showEmptyStateMovieList();
+            break;
+        default:
+            showMovieCards(movieList.filter(function(movie){
+                return movie.genre_ids.includes(idSearched) ? true : false;
+            }));
+            break;
+    }
+};
+
+const showEmptyStateMovieList = () => {
+    document.getElementById("movie-list").innerHTML = "";
+    let emptyState = document.createElement("h2");
+    emptyState.className = "empty-state";
+    emptyState.innerHTML = "Oops! No movies to show.";
+    document.getElementById("movie-list").appendChild(emptyState);
+};
+
+const loadCertifications = async (list) => {
+    for(let movie of list){
+        let url = `https://api.themoviedb.org/3/movie/${movie.id}/release_dates`;
+        const options = {
+            method: 'GET',
+            headers: {
+                accept: 'application/json',
+                Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzZTAzOGM1NTNkNDlhNmE4Y2RmOGRmNDljMDU3YTRiNiIsInN1YiI6IjY0YTliZGQ4NjZhMGQzMDBhZGU3YjZjNyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.qUxIoPicoB3WgJmbCP4fEPAwQWaIEdseXKkqTXHCf20'
+            }
+        };
+        const response = await fetch(url, options);
+        if(response.ok){
+            let data = await response.json();
+            data.results.forEach(val => {
+                if(val.iso_3166_1==countryCode){
+                    if(val.release_dates.length>0){
+                        movie.certification = val.release_dates[0].certification;
+                        showCertification(movie);
+                    }
+                }
+            });
+        }
+    }
+};
+
+const showCertification = (movie) => {
+    if(movie.certification!=undefined && movie.certification!=""){
+        let ratingSectionElement = document.getElementById(`movie-card-rating-section-${movie.id}`);
+
+        let certification = document.createElement("span");
+        certification.className = "card-certification";
+        certification.innerHTML = movie.certification;
+        ratingSectionElement.appendChild(certification);
+    }
+};
+
+const loadCertificationList = async () => {
+    const url = "https://api.themoviedb.org/3/certification/movie/list";
+    const options = {
+        method: 'GET',
+        headers: {
+            accept: 'application/json',
+            Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzZTAzOGM1NTNkNDlhNmE4Y2RmOGRmNDljMDU3YTRiNiIsInN1YiI6IjY0YTliZGQ4NjZhMGQzMDBhZGU3YjZjNyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.qUxIoPicoB3WgJmbCP4fEPAwQWaIEdseXKkqTXHCf20'
+        }
+    };
+    const response = await fetch(url, options);
+    if(response.ok){
+        let data = await response.json();
+        certificationList = data.certifications[countryCode];
+        showCertificationFilter();
+    }
+};
+
+const showCertificationFilter = () => {
+    console.log(certificationList);
+    let filterSectionElement = document.getElementById("main-filter-section");
+    let selectCertifications = document.createElement("select");
+    selectCertifications.addEventListener("change", () => { changeCertificationFilter(selectCertifications) });
+    let optionCertification = document.createElement("option");
+    optionCertification.value = "All";
+    optionCertification.innerHTML = "All certifications";
+    selectCertifications.appendChild(optionCertification);
+    certificationList.forEach(certification => {
+        let optionCertification = document.createElement("option");
+        optionCertification.value = certification.certification;
+        optionCertification.innerHTML = certification.certification;
+        selectCertifications.appendChild(optionCertification);
+    });
+    filterSectionElement.appendChild(selectCertifications);
+};
+
+const changeCertificationFilter = (obj) => {
+    let certificateSearched = obj.value;
+    switch (certificateSearched) {
+        case "All":
+            //show all
+            showMovieCards(movieList);
+            break;
+        default:
+            showMovieCards(movieList.filter(function(movie){
+                return movie.certification==certificateSearched ? true : false;
+            }));
+            break;
+    }
+};
+
+//document.getElementById("header-menu-trending").addEventListener("click", () => { loadTrendingMovies() });
 
 
-showTrendingMovies();
+loadTrendingMovies();
 loadCountryList();
+loadCertificationList();
