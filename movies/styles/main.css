@@ -292,7 +292,12 @@ select option {
     padding: 4px 8px;
     border-radius: 4px;
 }
-
+#main-filter-progress-bar {
+    color: var(--red-color);
+    font-size: 12px;
+    line-height: 25px;
+    width: 160px;
+}
 
 footer {
     padding: 0 64px;

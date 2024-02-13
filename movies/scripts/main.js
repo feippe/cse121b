@@ -311,6 +311,7 @@ const showEmptyStateMovieList = () => {
 };
 
 const loadCertifications = async (list) => {
+    let progress = 0;
     for(let movie of list){
         let url = `https://api.themoviedb.org/3/movie/${movie.id}/release_dates`;
         const options = {
@@ -323,6 +324,8 @@ const loadCertifications = async (list) => {
         const response = await fetch(url, options);
         if(response.ok){
             let data = await response.json();
+            progress++;
+            showLoadingBarCertifications(progress);
             data.results.forEach(val => {
                 if(val.iso_3166_1==countryCode){
                     if(val.release_dates.length>0){
@@ -364,7 +367,6 @@ const loadCertificationList = async () => {
 };
 
 const showCertificationFilter = () => {
-    console.log(certificationList);
     let filterSectionElement = document.getElementById("main-filter-section");
     let selectCertifications = document.createElement("select");
     selectCertifications.addEventListener("change", () => { changeCertificationFilter(selectCertifications) });
@@ -379,6 +381,10 @@ const showCertificationFilter = () => {
         selectCertifications.appendChild(optionCertification);
     });
     filterSectionElement.appendChild(selectCertifications);
+    let progressBarCertification = document.createElement("span");
+    progressBarCertification.id = "main-filter-progress-bar";
+    progressBarCertification.innerHTML = "Loading certifications... 0%";
+    filterSectionElement.appendChild(progressBarCertification);
 };
 
 const changeCertificationFilter = (obj) => {
@@ -393,6 +399,18 @@ const changeCertificationFilter = (obj) => {
                 return movie.certification==certificateSearched ? true : false;
             }));
             break;
+    }
+};
+
+const showLoadingBarCertifications = (num) => {
+    let progressBar = document.getElementById("main-filter-progress-bar");
+    let total = movieList.length;
+    if(total>0 && progressBar != undefined){
+        let percentage = Math.round(num * 100 / total);
+        progressBar.innerHTML = `Loading certifications... ${percentage}%`;
+        if(num>=100){
+            progressBar.remove();
+        }
     }
 };
 
