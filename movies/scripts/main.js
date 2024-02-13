@@ -269,6 +269,7 @@ const loadGenresList = async () => {
 const showGenresFilter = () => {
     let filterSectionElement = document.getElementById("main-filter-section");
     let selectGenre = document.createElement("select");
+    selectGenre.id = "select-filter-genres";
     selectGenre.addEventListener("change", () => { changeGenreFilter(selectGenre) });
     let optionGenre = document.createElement("option");
     optionGenre.value = 0;
@@ -285,10 +286,15 @@ const showGenresFilter = () => {
 
 const changeGenreFilter = (obj) => {
     let idSearched = parseInt(obj.value);
+    let certificateSearched = document.getElementById("select-filter-certifications").value;
     switch (idSearched) {
         case 0:
             //show all
-            showMovieCards(movieList);
+            if(certificateSearched=="All"){
+                showMovieCards(movieList);
+            }else{
+                changeCertificationFilter(document.getElementById("select-filter-certifications"));
+            } 
             break;
         case 10770:
             //tv movie (I dont have this genre)
@@ -296,7 +302,11 @@ const changeGenreFilter = (obj) => {
             break;
         default:
             showMovieCards(movieList.filter(function(movie){
-                return movie.genre_ids.includes(idSearched) ? true : false;
+                if(certificateSearched=="All"){
+                    return movie.genre_ids.includes(idSearched) ? true : false;
+                }else{
+                    return movie.certification==certificateSearched && movie.genre_ids.includes(idSearched) ? true : false;
+                }
             }));
             break;
     }
@@ -369,6 +379,7 @@ const loadCertificationList = async () => {
 const showCertificationFilter = () => {
     let filterSectionElement = document.getElementById("main-filter-section");
     let selectCertifications = document.createElement("select");
+    selectCertifications.id = "select-filter-certifications";
     selectCertifications.addEventListener("change", () => { changeCertificationFilter(selectCertifications) });
     let optionCertification = document.createElement("option");
     optionCertification.value = "All";
@@ -389,14 +400,23 @@ const showCertificationFilter = () => {
 
 const changeCertificationFilter = (obj) => {
     let certificateSearched = obj.value;
+    let idGenreSearched = parseInt(document.getElementById("select-filter-genres").value);
     switch (certificateSearched) {
         case "All":
             //show all
-            showMovieCards(movieList);
+            if(idGenreSearched==0){
+                showMovieCards(movieList);
+            }else{
+                changeGenreFilter(document.getElementById("select-filter-genres"));
+            }
             break;
         default:
             showMovieCards(movieList.filter(function(movie){
-                return movie.certification==certificateSearched ? true : false;
+                if(idGenreSearched==0){
+                    return movie.certification==certificateSearched ? true : false;
+                }else{
+                    return movie.certification==certificateSearched && movie.genre_ids.includes(idGenreSearched) ? true : false;
+                }
             }));
             break;
     }
